@@ -1,0 +1,64 @@
+﻿using Spectre.Console;
+using Spectre.Console.Cli;
+using System.ComponentModel;
+
+namespace SealedDeckBuilder
+{
+    internal class Program
+    {
+        public static async Task<int> Main(string[] args)
+        {
+            var app = new CommandApp();
+            app.Configure(config =>
+            {
+                config.AddCommand<AnalysePoolCommand>("analyse")
+                    .WithDescription("Analyzes a sealed pool and suggests a 40-card deck.")
+                    .WithExample(["analyze", "-i", "pool.txt", "-s", "FIN"]);
+            });
+
+            return await app.RunAsync(args);
+        }
+
+        public class AnalysePoolSettings : CommandSettings
+        {
+            [Description("Path to input file with card names, one per line.")]
+            [CommandOption("-i|--input-file <INPUT_FILE>")]
+            public string InputFile { get; set; } = string.Empty;
+
+            [Description("Set code for which the rankings will be fetched.")]
+            [CommandOption("-s|--set-code <SET_CODE>")]
+            public string SetCode { get; set; } = string.Empty;
+        }
+
+        public class AnalysePoolCommand : AsyncCommand<AnalysePoolSettings>
+        {
+            public override async Task<int> ExecuteAsync(CommandContext context, AnalysePoolSettings settings)
+            {
+                if (!File.Exists(settings.InputFile))
+                {
+                    AnsiConsole.MarkupLine("[red]Input file does not exist![/]");
+                    return -1;
+                }
+
+                // Fetch deck from input file
+                var deck = await InputParser.ParseInput(settings.InputFile);
+
+                foreach (var entry in deck.MainDeck)
+                {
+                    AnsiConsole.MarkupLine($"[green]{entry.Amount}x {entry.Card.name} - {entry.Card.mana_cost}[/]");
+                }
+
+                // Fetch card rankings from the provided URL
+                var rankings = await DraftsimRatingFetcher.FetchRatingsAsync(settings.SetCode);
+
+                rankings.Sort((a, b) => b.myrating.CompareTo(a.myrating));
+                foreach (var rating in rankings)
+                {
+                    AnsiConsole.MarkupLine($"[blue]{rating.name} - Rating: {rating.myrating}[/]");
+                }
+
+                return 0;
+            }
+        }
+    }
+}
