@@ -41,23 +41,43 @@ namespace SealedDeckBuilder
                 }
 
                 // Fetch deck from input file
-                var deck = await InputParser.ParseInput(settings.InputFile);
+                var pool = await InputParser.ParseInput(settings.InputFile);
+                if (pool == null) return -1;
+                PrintDeck(pool);
 
+                // Fetch card rankings from the provided URL
+                var ratings = await DraftsimRatingFetcher.FetchRatingsAsync(settings.SetCode);
+                if (ratings == null || ratings.Count == 0) return -1;
+                PrintRatings(ratings);
+
+                // Fetch keywords
+                var scryfallAPI = new ScryfallApi();
+                var keywords = await scryfallAPI.FetchKeywordListAsync();
+                if (keywords == null || keywords.Count == 0) return -1;
+
+                var deck = DeckBuilder.BuildDeck(pool, ratings, keywords);
+                if (deck == null) return -1;
+
+                PrintDeck(deck);
+
+                return 0;
+            }
+
+            private static void PrintDeck(Deck deck)
+            {
                 foreach (var entry in deck.MainDeck)
                 {
                     AnsiConsole.MarkupLine($"[green]{entry.Amount}x {entry.Card.name} - {entry.Card.mana_cost}[/]");
                 }
+            }
 
-                // Fetch card rankings from the provided URL
-                var rankings = await DraftsimRatingFetcher.FetchRatingsAsync(settings.SetCode);
-
-                rankings.Sort((a, b) => b.myrating.CompareTo(a.myrating));
-                foreach (var rating in rankings)
+            private static void PrintRatings(List<DraftsimCardRating> ratings)
+            {
+                ratings.Sort((a, b) => b.myrating.CompareTo(a.myrating));
+                foreach (var rating in ratings)
                 {
                     AnsiConsole.MarkupLine($"[blue]{rating.name} - Rating: {rating.myrating}[/]");
                 }
-
-                return 0;
             }
         }
     }
