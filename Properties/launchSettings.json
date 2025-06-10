@@ -2,7 +2,7 @@
   "profiles": {
     "SealedDeckBuilder": {
       "commandName": "Project",
-      "commandLineArgs": "analyse -i \"D:\\WorkSpaces\\mkerndler\\SealedDeckBuilder\\SealedDeckBuilder\\data\\pool.txt\" -s \"FIN\""
+      "commandLineArgs": "analyse -s \"FIN\""
     }
   }
 }

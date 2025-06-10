@@ -71,5 +71,43 @@ namespace SealedDeckBuilder
 
             return allKeywords.Distinct().Where(k => !string.IsNullOrWhiteSpace(k)).ToList();
         }
+
+        public async Task<List<Card>?> FetchCardsForSetAsync(string setCode)
+        {
+            var url = $"https://api.scryfall.com/cards/search?sort=rarity&q=set:{setCode.ToLower()}";
+            var hasMore = true;
+            var cards = new List<Card>();
+
+            try
+            {
+                while (hasMore)
+                {
+                    var response = await _http.GetAsync(url);
+                    if (!response.IsSuccessStatusCode)
+                        return null;
+
+                    var json = await response.Content.ReadAsStringAsync();
+                    var cardSet = JsonConvert.DeserializeObject<CardSet>(json, _jsonSettings);
+                    if (cardSet == null || cardSet.data == null || cardSet.data.Count == 0)
+                        return null;
+
+                    cards.AddRange(cardSet.data);
+                    hasMore = cardSet.has_more;
+                    url = cardSet.next_page;
+                }
+            }
+            catch
+            { }
+
+            return cards;
+        }
+
+        public class CardSet
+        {
+            public int total_cards { get; set; } = 0;
+            public bool has_more { get; set; } = false;
+            public string next_page { get; set; } = string.Empty;
+            public List<Card> data { get; set; } = [];
+        }
     }
 }

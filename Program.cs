@@ -34,21 +34,32 @@ namespace SealedDeckBuilder
         {
             public override async Task<int> ExecuteAsync(CommandContext context, AnalysePoolSettings settings)
             {
-                if (!File.Exists(settings.InputFile))
+                var generateDeck = !File.Exists(settings.InputFile);
+
+                if (string.IsNullOrEmpty(settings.SetCode))
                 {
-                    AnsiConsole.MarkupLine("[red]Input file does not exist![/]");
+                    AnsiConsole.MarkupLine("[red]Set code is required! Use -s or --set-code option.[/]");
                     return -1;
                 }
 
-                // Fetch deck from input file
-                var pool = await InputParser.ParseInput(settings.InputFile);
+                // Fetch deck from input file or generate a pool
+                Deck? pool;
+                if (generateDeck)
+                {
+                    pool = await Deck.GenerateSealedPool(settings.SetCode, 6);
+                }
+                else
+                {
+                    pool = await InputParser.ParseInput(settings.InputFile);
+                }
+
                 if (pool == null) return -1;
                 PrintDeck(pool);
 
                 // Fetch card rankings from the provided URL
                 var ratings = await DraftsimRatingFetcher.FetchRatingsAsync(settings.SetCode);
                 if (ratings == null || ratings.Count == 0) return -1;
-                PrintRatings(ratings);
+                //PrintRatings(ratings);
 
                 // Fetch keywords
                 var scryfallAPI = new ScryfallApi();
@@ -67,7 +78,7 @@ namespace SealedDeckBuilder
             {
                 foreach (var entry in deck.MainDeck)
                 {
-                    AnsiConsole.MarkupLine($"[green]{entry.Amount}x {entry.Card.name} - {entry.Card.mana_cost}[/]");
+                    AnsiConsole.MarkupLine($"[green]{entry.Amount}x {entry.Card.name}[/]");
                 }
             }
 
