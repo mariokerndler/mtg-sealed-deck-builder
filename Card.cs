@@ -14,5 +14,12 @@
         public string toughness { get; set; } = string.Empty;
         public string loyalty { get; set; } = string.Empty;
         public string[] keywords { get; set; } = [];
+
+        public string GetCardColor()
+        {
+            if (colors.Length == 0)
+                return "C";
+            return string.Join(", ", colors.Select(c => c.ToUpperInvariant()));
+        }
     }
 }

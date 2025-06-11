@@ -34,7 +34,10 @@ namespace SealedDeckBuilder
         {
             public override async Task<int> ExecuteAsync(CommandContext context, AnalysePoolSettings settings)
             {
-                var generateDeck = !File.Exists(settings.InputFile);
+                AnsiConsole.Write(
+                    new FigletText("Sealed Deck Builder")
+                        .LeftJustified()
+                        .Color(Color.Green));
 
                 if (string.IsNullOrEmpty(settings.SetCode))
                 {
@@ -44,17 +47,22 @@ namespace SealedDeckBuilder
 
                 // Fetch deck from input file or generate a pool
                 Deck? pool;
+                var generateDeck = !File.Exists(settings.InputFile);
                 if (generateDeck)
                 {
+                    AnsiConsole.MarkupLine($"[green]Generating sealed pool for set code: {settings.SetCode}[/]");
                     pool = await Deck.GenerateSealedPool(settings.SetCode, 6);
                 }
                 else
                 {
+                    AnsiConsole.MarkupLine($"[green]Reading sealed pool from file.[/]");
                     pool = await InputParser.ParseInput(settings.InputFile);
                 }
 
                 if (pool == null) return -1;
-                PrintDeck(pool);
+                AnsiConsole.WriteLine();
+                AnsiConsole.Write(new Rule("Sealed Pool"));
+                PrintDeck(pool, printDeckComposition: true);
 
                 // Fetch card rankings from the provided URL
                 var ratings = await DraftsimRatingFetcher.FetchRatingsAsync(settings.SetCode);
@@ -68,17 +76,88 @@ namespace SealedDeckBuilder
 
                 var deck = DeckBuilder.BuildDeck(pool, ratings, keywords);
                 if (deck == null) return -1;
+                AnsiConsole.WriteLine();
+                AnsiConsole.Write(new Rule("Generated Deck"));
+                PrintDeck(deck, printDeckComposition: true);
 
-                PrintDeck(deck);
+                AnsiConsole.WriteLine();
+                AnsiConsole.Write(new Rule("Deck Export"));
+                var printExport = AnsiConsole.Prompt(new SelectionPrompt<string>()
+                    .Title("Do you want to [green]export[/] the deck to a file?")
+                    .AddChoices(["Yes", "No"]));
+
+                if (printExport == "No") return 0;
+                else
+                    deck.PrintDeckForExport();
 
                 return 0;
             }
 
-            private static void PrintDeck(Deck deck)
+            private static void PrintDeck(Deck deck, bool printSideboad = false, bool printDeckComposition = false)
             {
-                foreach (var entry in deck.MainDeck)
+                var maindeck = deck.MainDeck;
+                var spells = maindeck.Where(e => e.Card.type_line.Contains("Instant") || e.Card.type_line.Contains("Sorcery")).ToList();
+                var creatures = maindeck.Where(e => e.Card.type_line.Contains("Creature")).ToList();
+                var artifacts = maindeck.Where(e => e.Card.type_line.Contains("Artifact")).ToList();
+                var enchantments = maindeck.Where(e => e.Card.type_line.Contains("Enchantment")).ToList();
+                var lands = maindeck.Where(e => e.Card.type_line.Contains("Land")).ToList();
+
+                var table = new Table()
+                    .Border(TableBorder.Rounded)
+                    .AddColumn(new TableColumn("[bold]Type[/]").LeftAligned())
+                    .AddColumn(new TableColumn("[bold]Count[/]").LeftAligned())
+                    .AddColumn(new TableColumn("[bold]Colors[/]").LeftAligned())
+                    .AddColumn(new TableColumn("[bold]Name[/]").LeftAligned());
+
+                foreach (var entry in creatures)
                 {
-                    AnsiConsole.MarkupLine($"[green]{entry.Amount}x {entry.Card.name}[/]");
+                    table.AddRow("Creature", entry.Amount.ToString(), entry.Card.GetCardColor(), entry.Card.name);
+                }
+
+                foreach (var entry in spells)
+                {
+                    table.AddRow("Spell", entry.Amount.ToString(), entry.Card.GetCardColor(), entry.Card.name);
+                }
+
+                foreach (var entry in artifacts)
+                {
+                    table.AddRow("Artifact", entry.Amount.ToString(), entry.Card.GetCardColor(), entry.Card.name);
+                }
+
+                foreach (var entry in enchantments)
+                {
+                    table.AddRow("Enchantment", entry.Amount.ToString(), entry.Card.GetCardColor(), entry.Card.name);
+                }
+
+                foreach (var entry in lands)
+                {
+                    table.AddRow("Land", entry.Amount.ToString(), entry.Card.GetCardColor(), entry.Card.name);
+                }
+
+                if (printSideboad)
+                {
+                    var sideboard = deck.Sideboard;
+                    if (sideboard.Count > 0)
+                    {
+                        table.AddRow("Sideboard", "", "");
+                        foreach (var entry in sideboard)
+                        {
+                            table.AddRow("", entry.Amount.ToString(), entry.Card.GetCardColor(), entry.Card.name);
+                        }
+                    }
+                }
+
+                AnsiConsole.Write(table);
+
+                if (printDeckComposition)
+                {
+                    AnsiConsole.WriteLine();
+                    AnsiConsole.Write(new BreakdownChart()
+                        .AddItem("Creatures", creatures.Count, Color.White)
+                        .AddItem("Spells", spells.Count, Color.Blue)
+                        .AddItem("Artifacts", artifacts.Count, Color.Red)
+                        .AddItem("Enchantments", enchantments.Count, Color.Green)
+                        .AddItem("Lands", lands.Count, Color.Yellow));
                 }
             }
 

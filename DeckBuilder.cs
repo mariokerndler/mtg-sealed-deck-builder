@@ -94,12 +94,7 @@ namespace SealedDeckBuilder
                 }
             }
 
-            // 7. Output suggested spells
-            AnsiConsole.MarkupLine($"[blue]Suggested Spells:[/]");
-            foreach (var entry in bestSpells)
-                AnsiConsole.MarkupLine($"[blue]{entry.entry.Amount}x {entry.entry.Card.name} - Score: {entry.score:F2}[/]");
-
-            // 8. Land selection
+            // 7. Land selection
             var deckColors = GetDeckColors(bestSpells.Select(b => b.entry), topColors);
             const int totalLandsNeeded = 17;
             var selectedLands = new List<DeckEntry>();
@@ -115,10 +110,9 @@ namespace SealedDeckBuilder
             // Trim if too many
             if (selectedLands.Count > totalLandsNeeded)
             {
-                selectedLands = selectedLands
+                selectedLands = [.. selectedLands
                     .OrderByDescending(l => evaluatedCards.FirstOrDefault(e => e.Entry.Card.name == l.Card.name)?.Score ?? 0)
-                    .Take(totalLandsNeeded)
-                    .ToList();
+                    .Take(totalLandsNeeded)];
             }
             // Basic lands to fill
             int basicsNeeded = totalLandsNeeded - selectedLands.Count;
@@ -139,22 +133,11 @@ namespace SealedDeckBuilder
                 basicLands[mainColor] += basicsNeeded - currentTotal;
             }
 
-            // 9. Enforce 40-card deck
+            // 8. Enforce 40-card deck
             var spellsToAdd = 40 - (selectedLands.Count + basicLands.Values.Sum());
             var finalSpells = bestSpells.Take(spellsToAdd).ToList();
 
-            // 10. Output lands
-            AnsiConsole.MarkupLine($"[blue]Suggested Lands:[/]");
-            foreach (var land in basicLands)
-                AnsiConsole.MarkupLine($"[blue]{land.Value}x {land.Key}[/]");
-            AnsiConsole.MarkupLine($"[blue]Suggested Fixing Lands:[/]");
-            foreach (var land in selectedLands.Where(e => IsFixingLand(e.Card)))
-            {
-                var fixColors = string.Join(", ", GetFixColors(land.Card));
-                AnsiConsole.MarkupLine($"[blue]{land.Amount}x {land.Card.name} (fixes: {fixColors})[/]");
-            }
-
-            // 11. Assemble deck
+            // 9. Assemble deck
             foreach (var spell in finalSpells)
                 deck.MainDeck.Add(spell.entry);
             foreach (var land in selectedLands)
@@ -163,7 +146,7 @@ namespace SealedDeckBuilder
             {
                 deck.MainDeck.Add(new DeckEntry(land.Value, new Card
                 {
-                    name = land.Key,
+                    name = GetBasicLandName(land.Key),
                     type_line = $"Basic Land — {land.Key}",
                     oracle_text = $"Add {{{land.Key}}}.",
                     colors = [land.Key]
@@ -171,6 +154,19 @@ namespace SealedDeckBuilder
             }
 
             return deck;
+        }
+
+        private static string GetBasicLandName(string color)
+        {
+            return color switch
+            {
+                "W" => "Plains",
+                "U" => "Island",
+                "B" => "Swamp",
+                "R" => "Mountain",
+                "G" => "Forest",
+                _ => throw new ArgumentException($"Invalid color: {color}")
+            };
         }
 
         private static Dictionary<string, float> CreateRatingDictionary(List<DraftsimCardRating> ratings)
@@ -291,7 +287,7 @@ namespace SealedDeckBuilder
             ArgumentNullException.ThrowIfNull(mainColors);
             // Count how many sources we have for this color
             var sources = GetColorSourceCount(color, fixingLands);
-            
+
             // We need at least 2.5 sources to consider a color splashable
             // This accounts for fetch lands and tapped duals
             return sources >= 2.5f;

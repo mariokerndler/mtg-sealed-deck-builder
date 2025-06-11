@@ -6,6 +6,7 @@ namespace SealedDeckBuilder
     internal class Deck
     {
         public List<DeckEntry> MainDeck { get; } = [];
+        public List<DeckEntry> Sideboard { get; } = [];
         public float DeckRating { get; private set; } = 0.0f;
 
         internal static async Task<Deck?> GenerateSealedPool(string setCode, int packCount)
@@ -34,12 +35,12 @@ namespace SealedDeckBuilder
                 if (mythics.Count > 0 && random.NextDouble() < 0.25)
                 {
                     var rareCard = mythics[random.Next(mythics.Count)];
-                    deck.MainDeck.Add(new DeckEntry(1, rareCard));
+                    deck.AddCardToMainDeck(rareCard);
                 }
                 else if (rares.Count > 0)
                 {
                     var rareCard = rares[random.Next(rares.Count)];
-                    deck.MainDeck.Add(new DeckEntry(1, rareCard));
+                    deck.AddCardToMainDeck(rareCard);
                 }
                 // Add three uncommons
                 for (int j = 0; j < 3; j++)
@@ -47,7 +48,7 @@ namespace SealedDeckBuilder
                     if (uncommons.Count > 0)
                     {
                         var uncommonCard = uncommons[random.Next(uncommons.Count)];
-                        deck.MainDeck.Add(new DeckEntry(1, uncommonCard));
+                        deck.AddCardToMainDeck(uncommonCard);
                     }
                 }
                 // Add ten commons
@@ -56,12 +57,35 @@ namespace SealedDeckBuilder
                     if (commons.Count > 0)
                     {
                         var commonCard = commons[random.Next(commons.Count)];
-                        deck.MainDeck.Add(new DeckEntry(1, commonCard));
+                        deck.AddCardToMainDeck(commonCard);
                     }
                 }
             }
 
             return deck;
+        }
+
+        internal void PrintDeckForExport()
+        {
+            AnsiConsole.MarkupLine("[bold]Main Deck:[/]");
+            foreach (var entry in MainDeck)
+            {
+                AnsiConsole.MarkupLine($"[green]{entry.Amount} {entry.Card.name}[/]");
+            }
+        }
+
+        private void AddCardToMainDeck(Card card)
+        {
+            var existing = MainDeck.FirstOrDefault(e => e.Card.name == card.name);
+            if (existing != null)
+            {
+                MainDeck.Remove(existing);
+                MainDeck.Add(existing with { Amount = existing.Amount + 1 });
+            }
+            else
+            {
+                MainDeck.Add(new DeckEntry(1, card));
+            }
         }
     }
 
