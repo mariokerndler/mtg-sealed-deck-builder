@@ -18,7 +18,7 @@
                 .ToDictionary(g => g.Key, g => g.Count());
         }
 
-        public static float EvaluateCard(Card card, Dictionary<string, float> ratings, Dictionary<string, int> keywordCounts, Dictionary<string, int> kindredCount)
+        public static float EvaluateCard(Card card, Dictionary<string, float> ratings, Dictionary<string, int> keywordCounts, Dictionary<string, int> kindredCount, Deck pool)
         {
             // Apply rating for card
             float score = ratings.TryGetValue(card.name, out var baseRating) ? baseRating : 1.0f;
@@ -54,6 +54,14 @@
             {
                 score += 0.3f;
             }
+
+            // Synergy engine integration
+            var totalSynergy = pool.MainDeck.Sum(entry =>
+            {
+                if (entry.Card.name == card.name) return 0f; // Skip self
+                return SynergyEvaluator.GetSynergyScore(card, entry.Card, 1, entry.Amount);
+            });
+            score += totalSynergy;
 
             return score;
         }

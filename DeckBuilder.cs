@@ -18,7 +18,10 @@ namespace SealedDeckBuilder
             var kindredCounts = Evaluator.GetKindredCount(pool);
             var ratingDict = CreateRatingDictionary(ratings);
             var evaluatedCards = pool.MainDeck
-                .Select(e => new { Entry = e, Score = Evaluator.EvaluateCard(e.Card, ratingDict, keywordCounts, kindredCounts) })
+                .SelectMany(e =>
+                    Enumerable.Repeat(
+                        new { Entry = new DeckEntry(1, e.Card), Score = Evaluator.EvaluateCard(e.Card, ratingDict, keywordCounts, kindredCounts, pool) },
+                        e.Amount))
                 .OrderByDescending(e => e.Score)
                 .ToList();
 
@@ -29,7 +32,10 @@ namespace SealedDeckBuilder
                 .ToDictionary(g => g.Key, g => g.Sum(x => x.Score));
 
             // 3. Boost color scores for fixing lands
-            var fixingLands = pool.MainDeck.Where(e => IsFixingLand(e.Card)).ToList();
+            var fixingLands = pool.MainDeck
+                .Where(e => IsFixingLand(e.Card))
+                .SelectMany(e => Enumerable.Repeat(new DeckEntry(1, e.Card), e.Amount))
+                .ToList();
             foreach (var land in fixingLands)
             {
                 foreach (var fixColor in GetFixColors(land.Card))
@@ -64,16 +70,21 @@ namespace SealedDeckBuilder
                 var colors = card.colors.ToHashSet();
                 var cmcBucket = Math.Clamp((int)Math.Floor(card.cmc), 1, 6);
                 curveCounts.TryAdd(cmcBucket, 0);
+
                 if (colors.Count > 0 && !colors.Any(c => topColors.Contains(c)))
                 {
                     if (item.Score < 3.5f || !colors.All(c => CanSplashColor(c, fixingLands.Select(l => l.Card), topColors)))
                         continue;
                 }
 
-                if (bestSpells.Count >= 23 || curveCounts[cmcBucket] >=
-                    (DesiredCurve.GetValueOrDefault(cmcBucket, 2))) continue;
-                bestSpells.Add((item.Entry, item.Score));
-                curveCounts[cmcBucket]++;
+                for (int i = 0; i < item.Entry.Amount; i++)
+                {
+                    if (bestSpells.Count >= 23 || curveCounts[cmcBucket] >= DesiredCurve.GetValueOrDefault(cmcBucket, 2))
+                        break;
+
+                    bestSpells.Add((new DeckEntry(1, card), item.Score));
+                    curveCounts[cmcBucket]++;
+                }
             }
             // Fill up to 23 spells if needed
             if (bestSpells.Count < 23)
@@ -138,8 +149,12 @@ namespace SealedDeckBuilder
             var finalSpells = bestSpells.Take(spellsToAdd).ToList();
 
             // 9. Assemble deck
-            foreach (var spell in finalSpells)
-                deck.MainDeck.Add(spell.entry);
+            foreach (var group in finalSpells.GroupBy(s => s.entry.Card.name))
+            {
+                var count = group.Count();
+                var card = group.First().entry.Card;
+                deck.MainDeck.Add(new DeckEntry(count, card));
+            }
             foreach (var land in selectedLands)
                 deck.MainDeck.Add(land);
             foreach (var land in basicLands.Where(land => land.Value > 0))
