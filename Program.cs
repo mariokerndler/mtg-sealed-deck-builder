@@ -93,15 +93,8 @@ namespace SealedDeckBuilder
                 return 0;
             }
 
-            private static void PrintDeck(Deck deck, bool printSideboad = false, bool printDeckComposition = false)
+            private static void PrintDeck(Deck deck, bool printSideboard = false, bool printDeckComposition = false)
             {
-                var maindeck = deck.MainDeck;
-                var spells = maindeck.Where(e => e.Card.type_line.Contains("Instant") || e.Card.type_line.Contains("Sorcery")).ToList();
-                var creatures = maindeck.Where(e => e.Card.type_line.Contains("Creature")).ToList();
-                var artifacts = maindeck.Where(e => e.Card.type_line.Contains("Artifact")).ToList();
-                var enchantments = maindeck.Where(e => e.Card.type_line.Contains("Enchantment")).ToList();
-                var lands = maindeck.Where(e => e.Card.type_line.Contains("Land")).ToList();
-
                 var table = new Table()
                     .Border(TableBorder.Rounded)
                     .AddColumn(new TableColumn("[bold]Type[/]").LeftAligned())
@@ -109,57 +102,79 @@ namespace SealedDeckBuilder
                     .AddColumn(new TableColumn("[bold]Colors[/]").LeftAligned())
                     .AddColumn(new TableColumn("[bold]Name[/]").LeftAligned());
 
-                foreach (var entry in creatures)
+                // Define type priority (higher up = higher priority)
+                var typePriority = new (string Label, Func<Card, bool> Predicate)[]
                 {
-                    table.AddRow("Creature", entry.Amount.ToString(), entry.Card.GetCardColor(), entry.Card.name);
+                    ("Creature",     c => c.type_line.Contains("Creature")),
+                    ("Spell",        c => c.type_line.Contains("Instant") || c.type_line.Contains("Sorcery")),
+                    ("Artifact",     c => c.type_line.Contains("Artifact")),
+                    ("Enchantment",  c => c.type_line.Contains("Enchantment")),
+                    ("Land",         c => c.type_line.Contains("Land")),
+                };
+
+                // Assign primary type to each card
+                var typedEntries = new List<(string Type, DeckEntry Entry)>();
+                foreach (var entry in deck.MainDeck)
+                {
+                    var type = typePriority.FirstOrDefault(p => p.Predicate(entry.Card)).Label ?? "Other";
+                    typedEntries.Add((type, entry));
                 }
 
-                foreach (var entry in spells)
-                {
-                    table.AddRow("Spell", entry.Amount.ToString(), entry.Card.GetCardColor(), entry.Card.name);
-                }
+                // Group entries by type label
+                var grouped = typedEntries
+                    .GroupBy(te => te.Type)
+                    .OrderBy(g => typePriority.ToList().FindIndex(tp => tp.Label == g.Key));
 
-                foreach (var entry in artifacts)
+                // Render table
+                foreach (var group in grouped)
                 {
-                    table.AddRow("Artifact", entry.Amount.ToString(), entry.Card.GetCardColor(), entry.Card.name);
-                }
-
-                foreach (var entry in enchantments)
-                {
-                    table.AddRow("Enchantment", entry.Amount.ToString(), entry.Card.GetCardColor(), entry.Card.name);
-                }
-
-                foreach (var entry in lands)
-                {
-                    table.AddRow("Land", entry.Amount.ToString(), entry.Card.GetCardColor(), entry.Card.name);
-                }
-
-                if (printSideboad)
-                {
-                    var sideboard = deck.Sideboard;
-                    if (sideboard.Count > 0)
+                    foreach (var (type, entry) in group)
                     {
-                        table.AddRow("Sideboard", "", "");
-                        foreach (var entry in sideboard)
-                        {
-                            table.AddRow("", entry.Amount.ToString(), entry.Card.GetCardColor(), entry.Card.name);
-                        }
+                        table.AddRow(type, entry.Amount.ToString(), entry.Card.GetCardColor(), entry.Card.name);
+                    }
+                }
+
+                // Add sideboard
+                if (printSideboard && deck.Sideboard.Any())
+                {
+                    table.AddRow("[italic]Sideboard[/]", "", "", "");
+                    foreach (var entry in deck.Sideboard)
+                    {
+                        table.AddRow("", entry.Amount.ToString(), entry.Card.GetCardColor(), entry.Card.name);
                     }
                 }
 
                 AnsiConsole.Write(table);
 
+                // Deck composition chart
                 if (printDeckComposition)
                 {
                     AnsiConsole.WriteLine();
-                    AnsiConsole.Write(new BreakdownChart()
-                        .AddItem("Creatures", creatures.Count, Color.White)
-                        .AddItem("Spells", spells.Count, Color.Blue)
-                        .AddItem("Artifacts", artifacts.Count, Color.Red)
-                        .AddItem("Enchantments", enchantments.Count, Color.Green)
-                        .AddItem("Lands", lands.Count, Color.Yellow));
+                    var chart = new BreakdownChart();
+
+                    foreach (var group in grouped)
+                    {
+                        var total = group.Sum(te => te.Entry.Amount);
+                        if (total > 0)
+                        {
+                            chart.AddItem(group.Key, total, GetColorForType(group.Key));
+                        }
+                    }
+
+                    AnsiConsole.Write(chart);
                 }
             }
+
+            private static Color GetColorForType(string type) => type switch
+            {
+                "Creature" => Color.White,
+                "Spell" => Color.Blue,
+                "Artifact" => Color.Red,
+                "Enchantment" => Color.Green,
+                "Land" => Color.Yellow,
+                _ => Color.Grey
+            };
+
 
             private static void PrintRatings(List<DraftsimCardRating> ratings)
             {
