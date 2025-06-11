@@ -1,0 +1,170 @@
+{
+  "Synergies": [
+    {
+      "Tag": "Landfall",
+      "Matches": [ "Ramp" ]
+    },
+    {
+      "Tag": "DeathTrigger",
+      "Matches": [ "SacrificeOutlet" ]
+    },
+    {
+      "Tag": "GraveyardPayoff",
+      "Matches": [ "SelfMill", "Discard" ]
+    },
+    {
+      "Tag": "SpellPayoff",
+      "Matches": [ "InstantSorcery" ]
+    },
+    {
+      "Tag": "TokenPayoff",
+      "Matches": [ "TokenProducer" ]
+    },
+    {
+      "Tag": "Proliferate",
+      "Matches": [ "CounterGiver" ]
+    },
+    {
+      "Tag": "ArtifactPayoff",
+      "Matches": [ "ArtifactProducer" ]
+    },
+    {
+      "Tag": "EnchantmentPayoff",
+      "Matches": [ "Enchantment" ]
+    },
+    {
+      "Tag": "LifegainPayoff",
+      "Matches": [ "Lifegain" ]
+    },
+    {
+      "Tag": "Madness",
+      "Matches": [ "Discard" ]
+    },
+    {
+      "Tag": "Reanimation",
+      "Matches": [ "SelfMill", "Discard" ]
+    },
+    {
+      "Tag": "DrawPayoff",
+      "Matches": [ "Draw" ]
+    },
+    {
+      "Tag": "FightBite",
+      "Matches": [ "BigCreature" ]
+    }
+  ],
+  "Rules": [
+    {
+      "Tag": "Landfall",
+      "OracleKeywords": [ "landfall" ]
+    },
+    {
+      "Tag": "Ramp",
+      "OracleKeywords": [
+        "search your library for a land",
+        "basic land",
+        "put a land",
+        "land card from your library"
+      ]
+    },
+    {
+      "Tag": "DeathTrigger",
+      "OracleKeywords": [ "when", "dies" ]
+    },
+    {
+      "Tag": "SacrificeOutlet",
+      "OracleKeywords": [ "sacrifice a creature", "sacrifice another" ]
+    },
+    {
+      "Tag": "GraveyardPayoff",
+      "OracleKeywords": [ "graveyard", "cards in your graveyard", "number of cards" ]
+    },
+    {
+      "Tag": "SelfMill",
+      "OracleKeywords": [ "mill", "put the top", "graveyard" ]
+    },
+    {
+      "Tag": "TokenProducer",
+      "OracleKeywords": [ "create", "token" ]
+    },
+    {
+      "Tag": "TokenPayoff",
+      "OracleKeywords": [ "for each token", "whenever a token" ]
+    },
+    {
+      "Tag": "Proliferate",
+      "OracleKeywords": [ "proliferate" ]
+    },
+    {
+      "Tag": "CounterGiver",
+      "OracleKeywords": [ "put a +1/+1 counter", "+1/+1 counter" ]
+    },
+    {
+      "Tag": "InstantSorcery",
+      "TypeLineKeywords": [ "Instant", "Sorcery" ]
+    },
+    {
+      "Tag": "SpellPayoff",
+      "OracleKeywords": [ "cast an instant", "cast a sorcery" ]
+    },
+    {
+      "Tag": "ArtifactProducer",
+      "OracleKeywords": [ "create", "artifact" ]
+    },
+    {
+      "Tag": "ArtifactPayoff",
+      "TypeLineKeywords": [ "Artifact" ],
+      "OracleExclusions": [ "Creature" ]
+    },
+    {
+      "Tag": "Enchantment",
+      "TypeLineKeywords": [ "Enchantment" ]
+    },
+    {
+      "Tag": "EnchantmentPayoff",
+      "OracleKeywords": [ "for each enchantment", "enchantment you control" ]
+    },
+    {
+      "Tag": "Lifeloss",
+      "OracleKeywords": [ "lose", "life" ]
+    },
+    {
+      "Tag": "Lifegain",
+      "OracleKeywords": [ "gain", "life" ]
+    },
+    {
+      "Tag": "LifegainPayoff",
+      "OracleKeywords": [ "whenever you gain life", "if you gained life" ]
+    },
+    {
+      "Tag": "Draw",
+      "OracleKeywords": [ "draw a card" ]
+    },
+    {
+      "Tag": "DrawPayoff",
+      "OracleKeywords": [ "whenever you draw a card" ]
+    },
+    {
+      "Tag": "Discard",
+      "OracleKeywords": [ "discard a card" ]
+    },
+    {
+      "Tag": "Madness",
+      "OracleKeywords": [ "madness" ]
+    },
+    {
+      "Tag": "Reanimation",
+      "OracleKeywords": [ "return target creature", "graveyard" ]
+    },
+    {
+      "Tag": "FightBite",
+      "OracleKeywords": [ "fight", "deals damage equal to its power" ]
+    },
+    {
+      "Tag": "BigCreature",
+      "TypeLineKeywords": [ "Creature" ],
+      "OracleKeywords": [ "power" ],
+      "MinimumCMC": 5
+    }
+  ]
+}

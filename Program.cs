@@ -80,6 +80,8 @@ namespace SealedDeckBuilder
                 AnsiConsole.Write(new Rule("Generated Deck"));
                 PrintDeck(deck, printDeckComposition: true);
 
+                //SynergyEvaluator.PrintSynergyGraph(deck);
+
                 AnsiConsole.WriteLine();
                 AnsiConsole.Write(new Rule("Deck Export"));
                 var printExport = AnsiConsole.Prompt(new SelectionPrompt<string>()

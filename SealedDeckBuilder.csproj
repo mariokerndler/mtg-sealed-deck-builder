@@ -15,7 +15,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="data\" />
+    <None Update="data\pool.txt">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
+    <None Update="data\synergy_rules.json">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </None>
   </ItemGroup>
 
 </Project>
