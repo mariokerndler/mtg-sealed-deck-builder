@@ -5,7 +5,7 @@
         public string oracle_id { get; set; } = string.Empty;
         public string name { get; set; } = string.Empty;
         public string mana_cost { get; set; } = string.Empty;
-        public decimal cmc { get; set; } = 0.0m;
+        public float cmc { get; set; } = 0.0f;
         public string type_line { get; set; } = string.Empty;
         public string oracle_text { get; set; } = string.Empty;
         public string[] colors { get; set; } = [];
